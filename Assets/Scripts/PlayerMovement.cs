@@ -5,22 +5,22 @@ using UnityEngine.InputSystem;
 public class PlayerMovement : MonoBehaviour
 {
     public float moveSpeed = 5f;
+    public float rotationSpeed = 10f;
+    public Transform cameraTransform;
 
     private CharacterController controller;
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
-
-        Debug.Log("PrettyBattle PlayerMovement started!");
     }
 
     void Update()
     {
-        Vector2 input = Vector2.zero;
-
-        if (Keyboard.current == null)
+        if (Keyboard.current == null || cameraTransform == null)
             return;
+
+        Vector2 input = Vector2.zero;
 
         if (Keyboard.current.wKey.isPressed)
             input.y += 1;
@@ -34,10 +34,37 @@ public class PlayerMovement : MonoBehaviour
         if (Keyboard.current.dKey.isPressed)
             input.x += 1;
 
-        Vector3 moveDirection = new Vector3(input.x, 0, input.y);
+        input = Vector2.ClampMagnitude(input, 1f);
 
-        moveDirection = Vector3.ClampMagnitude(moveDirection, 1f);
+        Vector3 cameraForward = cameraTransform.forward;
+        Vector3 cameraRight = cameraTransform.right;
 
-        controller.Move(moveDirection * moveSpeed * Time.deltaTime);
+        cameraForward.y = 0f;
+        cameraRight.y = 0f;
+
+        cameraForward.Normalize();
+        cameraRight.Normalize();
+
+
+        Vector3 moveDirection =
+            cameraForward * input.y +
+            cameraRight * input.x;
+
+        if (moveDirection.sqrMagnitude > 0.001f)
+        {
+            Quaternion targetRotation =
+                Quaternion.LookRotation(moveDirection);
+
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRotation,
+                rotationSpeed * Time.deltaTime
+            );
+        }
+
+        controller.Move(
+            moveDirection * moveSpeed * Time.deltaTime
+        );
+
     }
 }
