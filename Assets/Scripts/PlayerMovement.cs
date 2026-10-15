@@ -8,6 +8,10 @@ public class PlayerMovement : MonoBehaviour
     public float rotationSpeed = 10f;
     public Transform cameraTransform;
 
+    public float gravity = -9.81f;
+    public float jumpHeight = 2f;
+
+    private float verticalVelocity = 0f;
     private CharacterController controller;
 
     void Start()
@@ -20,6 +24,19 @@ public class PlayerMovement : MonoBehaviour
         if (Keyboard.current == null || cameraTransform == null)
             return;
 
+        Vector2 input = ReadMovementInput();
+
+        Vector3 moveDirection = GetMovementDirection(input);
+
+        RotatePlayer(moveDirection);
+
+        HandleGravityAndJump();
+
+        MovePlayer(moveDirection);
+    }
+
+    private Vector2 ReadMovementInput()
+    {
         Vector2 input = Vector2.zero;
 
         if (Keyboard.current.wKey.isPressed)
@@ -34,8 +51,11 @@ public class PlayerMovement : MonoBehaviour
         if (Keyboard.current.dKey.isPressed)
             input.x += 1;
 
-        input = Vector2.ClampMagnitude(input, 1f);
+        return Vector2.ClampMagnitude(input, 1f);
+    }
 
+    private Vector3 GetMovementDirection(Vector2 input)
+    {
         Vector3 cameraForward = cameraTransform.forward;
         Vector3 cameraRight = cameraTransform.right;
 
@@ -45,11 +65,15 @@ public class PlayerMovement : MonoBehaviour
         cameraForward.Normalize();
         cameraRight.Normalize();
 
-
         Vector3 moveDirection =
             cameraForward * input.y +
             cameraRight * input.x;
 
+        return moveDirection;
+    }
+
+    private void RotatePlayer(Vector3 moveDirection)
+    {
         if (moveDirection.sqrMagnitude > 0.001f)
         {
             Quaternion targetRotation =
@@ -61,10 +85,32 @@ public class PlayerMovement : MonoBehaviour
                 rotationSpeed * Time.deltaTime
             );
         }
+    }
 
-        controller.Move(
-            moveDirection * moveSpeed * Time.deltaTime
-        );
+    private void HandleGravityAndJump()
+    {
+        if (controller.isGrounded && verticalVelocity < 0f)
+        {
+            verticalVelocity = -2f;
+        }
 
+        if (controller.isGrounded &&
+            Keyboard.current.spaceKey.wasPressedThisFrame)
+        {
+            verticalVelocity = Mathf.Sqrt(
+                jumpHeight * -2f * gravity
+            );
+        }
+
+        verticalVelocity += gravity * Time.deltaTime;
+    }
+
+    private void MovePlayer(Vector3 moveDirection)
+    {
+        Vector3 velocity = moveDirection * moveSpeed;
+
+        velocity.y = verticalVelocity;
+
+        controller.Move(velocity * Time.deltaTime);
     }
 }
