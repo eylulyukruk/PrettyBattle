@@ -148,19 +148,96 @@ public class EnemyAI : MonoBehaviour
 
     private bool CanSeeTarget()
     {
-        Vector3 direction =
-            target.position - firePoint.position;
+        if (target == null || firePoint == null)
+            return false;
 
-        if (Physics.Raycast(
+        // Prevent firing when the muzzle overlaps a wall.
+        Collider[] nearby = Physics.OverlapSphere(
             firePoint.position,
-            direction.normalized,
-            out RaycastHit hit,
-            direction.magnitude + 0.5f))
+            0.15f,
+            ~0,
+            QueryTriggerInteraction.Ignore
+        );
+
+        foreach (Collider collider in nearby)
         {
-            return hit.collider.transform.IsChildOf(target);
+            Transform other = collider.transform;
+
+            // Ignore the bot's own colliders.
+            if (other == transform ||
+                other.IsChildOf(transform))
+                continue;
+
+            // Ignore the target's colliders.
+            if (other == target ||
+                other.IsChildOf(target))
+                continue;
+
+            return false;
         }
 
-        return false;
+        Collider targetCollider =
+            target.GetComponentInChildren<Collider>();
+
+        Vector3 targetPoint = targetCollider != null
+            ? targetCollider.bounds.center
+            : target.position;
+
+        // Check visibility from the bot's body.
+        Vector3 bodyEye =
+            transform.position + Vector3.up * 1.2f;
+
+        // Both the body and the muzzle must have
+        // an unobstructed line to the target.
+        return HasClearLine(bodyEye, targetPoint) &&
+               HasClearLine(firePoint.position, targetPoint);
+    }
+
+    private bool HasClearLine(
+        Vector3 origin,
+        Vector3 destination)
+    {
+        Vector3 direction = destination - origin;
+        float distance = direction.magnitude;
+
+        if (distance < 0.001f)
+            return false;
+
+        RaycastHit[] hits = Physics.RaycastAll(
+            origin,
+            direction.normalized,
+            distance + 0.1f,
+            ~0,
+            QueryTriggerInteraction.Ignore
+        );
+
+        float nearestDistance = float.MaxValue;
+        Collider nearestCollider = null;
+
+        foreach (RaycastHit hit in hits)
+        {
+            Transform hitTransform = hit.collider.transform;
+
+            // Ignore the shooting bot.
+            if (hitTransform == transform ||
+                hitTransform.IsChildOf(transform))
+                continue;
+
+            if (hit.distance < nearestDistance)
+            {
+                nearestDistance = hit.distance;
+                nearestCollider = hit.collider;
+            }
+        }
+
+        if (nearestCollider == null)
+            return false;
+
+        Transform closest =
+            nearestCollider.transform;
+
+        return closest == target ||
+               closest.IsChildOf(target);
     }
 
     private void Shoot()
