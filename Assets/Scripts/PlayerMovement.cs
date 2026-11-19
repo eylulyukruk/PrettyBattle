@@ -13,10 +13,12 @@ public class PlayerMovement : MonoBehaviour
 
     private float verticalVelocity = 0f;
     private CharacterController controller;
+    private Animator animator;
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
+        animator = GetComponentInChildren<Animator>();
     }
 
     void Update()
@@ -100,6 +102,11 @@ public class PlayerMovement : MonoBehaviour
             verticalVelocity = Mathf.Sqrt(
                 jumpHeight * -2f * gravity
             );
+
+            if (animator != null)
+            {
+                animator.SetTrigger("Jump");
+            }
         }
 
         verticalVelocity += gravity * Time.deltaTime;

@@ -23,9 +23,6 @@ public class PlayerAnimationController : MonoBehaviour
         float speed = velocity.magnitude;
         animator.SetFloat("Speed", speed > 0.1f ? 1f : 0f);
 
-        if (Input.GetKeyDown(KeyCode.Space) && controller.isGrounded)
-        {
-            animator.SetTrigger("Jump");
-        }
+        
     }
 }
