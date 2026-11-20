@@ -25,10 +25,13 @@ public class PlayerShooting : MonoBehaviour
 
     private float nextFireTime;
     private TeamMember teamMember;
+    private Animator animator;
 
     void Start()
     {
         teamMember = GetComponent<TeamMember>();
+
+        animator = GetComponentInChildren<Animator>();
     }
 
     void Update()
@@ -43,14 +46,18 @@ public class PlayerShooting : MonoBehaviour
         }
 
         if (Mouse.current.leftButton.isPressed &&
-            Time.time >= nextFireTime)
+    Time.time >= nextFireTime)
         {
-            Shoot();
+            if (animator != null)
+            {
+                animator.SetTrigger("Shoot");
+            }
+
             nextFireTime = Time.time + fireRate;
         }
     }
 
-    private void Shoot()
+    public void Shoot()
     {
         // Ray starts at the center of the camera.
         Ray ray = playerCamera.ViewportPointToRay(
